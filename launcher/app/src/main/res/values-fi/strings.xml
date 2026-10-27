@@ -115,4 +115,5 @@
     <string name="clock_format_system">Järjestelmä</string>
     <string name="clock_format_12">12 tuntia</string>
     <string name="clock_format_24">24 tuntia</string>
+    <string name="remote_buttons_label">Kaukosäätimen painikkeet</string>
 </resources>

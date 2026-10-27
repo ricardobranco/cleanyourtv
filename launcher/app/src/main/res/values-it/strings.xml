@@ -149,4 +149,5 @@
     <string name="clock_format_system">Sistema</string>
     <string name="clock_format_12">12 ore</string>
     <string name="clock_format_24">24 ore</string>
+    <string name="remote_buttons_label">Tasti del telecomando</string>
 </resources>

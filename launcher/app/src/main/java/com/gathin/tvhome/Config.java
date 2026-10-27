@@ -187,6 +187,10 @@ final class Config {
     final boolean inputsConnectedOnly;
     /** "12", "24" or "system" (theme clock_format, or Launcher settings' Clock row); see ClockFormat. */
     final String clockFormat;
+    /** Buttons offered in Launcher settings > Remote buttons, "keycode=Label" (remap_buttons); empty hides the row. */
+    final List<String> remapButtons;
+    /** app_keys before the Remote buttons choices replaced any entry: what Default means there. */
+    final List<String> defaultAppKeys;
     /** The Settings button opens the quick settings panel instead of the TV's Settings (settings_key_panel). */
     final boolean settingsKeyPanel;
     /** Home puts the remote's accessibility helpers back after a force stop (restore_key_services; ServiceRepair). */
@@ -286,7 +290,8 @@ final class Config {
                    boolean keyFilter, boolean dockGlass, String glowStyle, boolean wallpaperCaptions,
                    boolean handleViewInputs, boolean tileMenu, boolean dockEvenPadding, boolean dockBand, boolean cinematicDots, boolean cinematicWhiteFocus, boolean wifiStatusColor, int cinematicScrim, int cinematicArt,
                    Map<String, Set<String>> wallpaperMoods, boolean gamepadPassthrough, boolean consumeVolumeKeys, boolean powerOnHome, boolean homeLongPressHome, boolean wifiStatusWarnings, List<String> topBarApps, boolean showGreeting, boolean headerWhite, boolean clockWallpaper, int clockWallpaperDim, boolean clockGlow, String glassStyle, boolean singleRow, boolean dockBandAll, boolean lunarDate, int lunarUtcOffset, boolean dateBelowClock, boolean vpnPill, String locale, boolean powerOnHomeAlways, boolean inputsConnectedOnly,
-                   int openOnStartNetworkWait, boolean iconOnlyVpn, String clockFormat, boolean backOpensClock) {
+                   int openOnStartNetworkWait, boolean iconOnlyVpn, String clockFormat, boolean backOpensClock,
+                   List<String> remapButtons, List<String> defaultAppKeys) {
         this.handleViewInputs = handleViewInputs;
         this.tileMenu = tileMenu;
         this.inputKeycodes = inputKeycodes;
@@ -388,6 +393,8 @@ final class Config {
         this.inputsConnectedOnly = inputsConnectedOnly;
         this.openOnStartNetworkWait = openOnStartNetworkWait;
         this.clockFormat = clockFormat;
+        this.remapButtons = Collections.unmodifiableList(remapButtons);
+        this.defaultAppKeys = Collections.unmodifiableList(defaultAppKeys);
         this.wifiStatusWarnings = wifiStatusWarnings;
         this.topBarApps = Collections.unmodifiableList(topBarApps);
         this.showGreeting = showGreeting;
@@ -502,6 +509,7 @@ final class Config {
         boolean powerOnHomeAlways = res.getBoolean(R.bool.power_on_home_always);
         boolean inputsConnectedOnly = res.getBoolean(R.bool.inputs_connected_only);
         String clockFormat = res.getString(R.string.clock_format);
+        List<String> remapButtons = new ArrayList<>(Arrays.asList(res.getStringArray(R.array.remap_buttons)));
         boolean dockGlass = res.getBoolean(R.bool.dock_glass);
         boolean dockEvenPadding = res.getBoolean(R.bool.dock_even_padding);
         boolean dockBand = res.getBoolean(R.bool.dock_band);
@@ -613,6 +621,7 @@ final class Config {
             powerOnHomeAlways = bool(json, "power_on_home_always", powerOnHomeAlways);
             inputsConnectedOnly = bool(json, "inputs_connected_only", inputsConnectedOnly);
             clockFormat = string(json, CLOCK_FORMAT_KEY, clockFormat);
+            remapButtons = stringList(json, "remap_buttons", remapButtons);
             dockGlass = bool(json, "dock_glass", dockGlass);
             dockEvenPadding = bool(json, "dock_even_padding", dockEvenPadding);
             dockBand = bool(json, "dock_band", dockBand);
@@ -681,6 +690,9 @@ final class Config {
             wallpaper = chosen.isEmpty() ? null : chosen.get(0);
             wallpaperEnabled = !chosen.isEmpty();
         }
+        // Remote buttons mapped in Launcher settings (remap_buttons) replace their app_keys tap entries.
+        List<String> defaultAppKeys = appKeys;
+        appKeys = ButtonMap.apply(appKeys, ButtonMap.choices(choices, remapButtons));
         // A festive skin comes only from a theme; config.xml has no festival. seasonal_skin names one the same way
         // but launchers before it ignore the key, so a theme can carry it without older ones showing the diya skin.
         Festival festival = json == null ? Festival.NONE : Festival.parse(festivalName(json),
@@ -700,7 +712,7 @@ final class Config {
                 consumeVolumeKeys, powerOnHome, homeLongPressHome, wifiStatusWarnings, topBarApps, showGreeting, headerWhite, clockWallpaper,
                 Math.max(0, Math.min(90, clockWallpaperDim)), clockGlow, glassStyle, singleRow && dockRow, dockBandAll, lunar, lunarOffset,
                 dateBelowClock, vpnPill, locale, powerOnHomeAlways, inputsConnectedOnly,
-                Math.max(0, Math.min(600, openOnStartNetworkWait)), iconOnlyVpn, clockFormat, backOpensClock);
+                Math.max(0, Math.min(600, openOnStartNetworkWait)), iconOnlyVpn, clockFormat, backOpensClock, remapButtons, defaultAppKeys);
     }
 
     /**

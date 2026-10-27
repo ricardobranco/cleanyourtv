@@ -98,4 +98,5 @@
     <string name="clock_format_system">Système</string>
     <string name="clock_format_12">12 heures</string>
     <string name="clock_format_24">24 heures</string>
+    <string name="remote_buttons_label">Boutons de la télécommande</string>
 </resources>
