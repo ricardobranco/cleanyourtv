@@ -13,6 +13,16 @@
         android:scaleType="centerCrop"
         android:importantForAccessibility="no" />
 
+    <!-- The playing track's artwork over the whole screen, darkened so the clock stays readable. -->
+    <ImageView
+        android:id="@+id/dreamBackdrop"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0"
+        android:importantForAccessibility="no"
+        android:scaleType="centerCrop"
+        android:visibility="gone" />
+
     <LinearLayout
         android:id="@+id/dreamContent"
         android:layoutDirection="rtl"
@@ -68,5 +78,42 @@
             android:fontFamily="@string/font_regular"
             android:letterSpacing="0.14"
             android:textAllCaps="true" />
+
+        <!-- What is playing (MediaWatch), shown only while something plays; it drifts with the clock. -->
+        <LinearLayout
+            android:id="@+id/dreamMusic"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:layout_marginTop="28dp"
+            android:gravity="right"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/dreamTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:fontFamily="@string/font_medium"
+                android:maxWidth="520dp"
+                android:singleLine="true"
+                android:textDirection="anyRtl"
+                android:textColor="#E6FFFFFF"
+                android:textSize="26sp" />
+
+            <TextView
+                android:id="@+id/dreamArtist"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:fontFamily="@string/font_regular"
+                android:maxWidth="520dp"
+                android:singleLine="true"
+                android:textDirection="anyRtl"
+                android:textColor="#8CFFFFFF"
+                android:textSize="18sp" />
+        </LinearLayout>
     </LinearLayout>
 </FrameLayout>

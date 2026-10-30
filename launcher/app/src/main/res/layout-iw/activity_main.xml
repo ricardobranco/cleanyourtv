@@ -32,6 +32,16 @@
         android:layout_height="match_parent"
         android:alpha="0" />
 
+    <!-- While an app plays music (MediaWatch), its artwork over the wallpaper and the glow, darkened for the tiles. -->
+    <ImageView
+        android:id="@+id/musicBackdrop"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0"
+        android:importantForAccessibility="no"
+        android:scaleType="centerCrop"
+        android:visibility="gone" />
+
     <!-- Race-weekend panel (a theme's race_calendar, see RaceWeekend), mirrored: under the clock on the right. -->
     <LinearLayout
         android:id="@+id/racePanel"
