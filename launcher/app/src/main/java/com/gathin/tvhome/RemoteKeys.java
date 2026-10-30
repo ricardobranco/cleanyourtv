@@ -367,10 +367,15 @@ final class RemoteKeys {
                 break;
             case "screensaver":
                 // The screensaver chosen in the TV's settings, through the system's "start now" shortcut; the
-                // launcher's own clock where the firmware has no such shortcut.
+                // launcher's own clock where the firmware has no such shortcut, or where that clock is the chosen
+                // screensaver: TCL's Google TV 14 answers the shortcut without starting anything.
                 Intent dream = new Intent(Intent.ACTION_MAIN)
                         .setClassName("com.android.systemui", "com.android.systemui.Somnambulator");
-                if (ctx.getPackageManager().resolveActivity(dream, 0) == null) dream = new Intent(ctx, ClockActivity.class);
+                String chosen = Settings.Secure.getString(ctx.getContentResolver(), "screensaver_components");
+                boolean ours = chosen != null && chosen.startsWith(ctx.getPackageName() + "/");
+                if (ours || ctx.getPackageManager().resolveActivity(dream, 0) == null) {
+                    dream = new Intent(ctx, ClockActivity.class);
+                }
                 start(ctx, dream);
                 break;
             case "settings":

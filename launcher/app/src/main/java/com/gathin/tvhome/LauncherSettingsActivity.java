@@ -282,6 +282,9 @@ public final class LauncherSettingsActivity extends Activity {
         targets.add(new String[]{getString(R.string.off), ButtonMap.NOTHING});
         targets.add(new String[]{getString(R.string.inputs), RemoteKeys.INPUTS});
         targets.add(new String[]{getString(R.string.settings), "settings"});
+        targets.add(new String[]{getString(R.string.remote_button_mute), "mute"});
+        targets.add(new String[]{getString(R.string.remote_button_sleep), "sleep"});
+        targets.add(new String[]{getString(R.string.remote_button_screensaver), "screensaver"});
         targets.addAll(tvApps());
         String[] labels = new String[targets.size()];
         int checked = 0;
@@ -316,6 +319,9 @@ public final class LauncherSettingsActivity extends Activity {
             case ButtonMap.NOTHING: return getString(R.string.off);
             case RemoteKeys.INPUTS: return getString(R.string.inputs);
             case "settings": return getString(R.string.settings);
+            case "mute": return getString(R.string.remote_button_mute);
+            case "sleep": return getString(R.string.remote_button_sleep);
+            case "screensaver": return getString(R.string.remote_button_screensaver);
             default:
                 try {
                     PackageManager pm = getPackageManager();

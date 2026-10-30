@@ -192,12 +192,9 @@ public class HomeKeyService extends AccessibilityService {
         settingsKeycodes = config.settingsKeycodes;
         settingsPanel = config.settingsKeyPanel;
         consumeVolumeKeys = config.consumeVolumeKeys;
-        appKeys = RemoteKeys.parseAppKeys(config.appKeys);
-        appScancodes = RemoteKeys.parseAppScancodes(config.appKeys);
+        loadAppKeys(config);
         RemoteKeys.applyKeyFilter(this, config.keyFilter);
         homeLongPressHome = config.homeLongPressHome;
-        frontAppKeys = RemoteKeys.parseFrontAppKeys(config.appKeys);
-        frontAppScancodes = RemoteKeys.parseFrontAppScancodes(config.appKeys);
         boolean watchFront = !frontAppKeys.isEmpty() || !frontAppScancodes.isEmpty();
         stockHome.clear();
         stockHomePackage = config.stockHomeRedirect;
@@ -229,8 +226,6 @@ public class HomeKeyService extends AccessibilityService {
         }
         if (!stockHome.isEmpty() || !powerOnLiveTv.isEmpty()) probeAtBoot();
         armStandbyExit();
-        holdAppKeys = RemoteKeys.parseHoldAppKeys(config.appKeys);
-        holdAppScancodes = RemoteKeys.parseHoldAppScancodes(config.appKeys);
         // gamepad_passthrough, off by default. Only with key_filter on: off, the service never filters keys.
         if (config.gamepadPassthrough && config.keyFilter && gamepads == null) {
             gamepads = new GamepadPassthrough(this);
@@ -238,12 +233,19 @@ public class HomeKeyService extends AccessibilityService {
         }
     }
 
-    /** Launcher settings > Remote buttons saved a choice: take the new app_keys taps now, without a new binding. */
+    private void loadAppKeys(Config config) {
+        appKeys = RemoteKeys.parseAppKeys(config.appKeys);
+        appScancodes = RemoteKeys.parseAppScancodes(config.appKeys);
+        frontAppKeys = RemoteKeys.parseFrontAppKeys(config.appKeys);
+        frontAppScancodes = RemoteKeys.parseFrontAppScancodes(config.appKeys);
+        holdAppKeys = RemoteKeys.parseHoldAppKeys(config.appKeys);
+        holdAppScancodes = RemoteKeys.parseHoldAppScancodes(config.appKeys);
+    }
+
+    /** Launcher settings > Remote buttons saved a choice: take every new app_keys entry now, without a new binding. */
     static void reloadAppKeys() {
         HomeKeyService service = running;
-        if (service != null && service.unlockReceiver == null) {
-            service.appKeys = RemoteKeys.parseAppKeys(Config.load(service).appKeys);
-        }
+        if (service != null && service.unlockReceiver == null) service.loadAppKeys(Config.load(service));
     }
 
     /** A tap's target: the "front:" entry while the button's own app is already in front, else the usual one. */

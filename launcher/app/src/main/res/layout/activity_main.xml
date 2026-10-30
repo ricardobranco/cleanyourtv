@@ -30,6 +30,16 @@
         android:layout_height="match_parent"
         android:alpha="0" />
 
+    <!-- While an app plays music (MediaWatch), its artwork over the wallpaper and the glow, darkened for the tiles. -->
+    <ImageView
+        android:id="@+id/musicBackdrop"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0"
+        android:importantForAccessibility="no"
+        android:scaleType="centerCrop"
+        android:visibility="gone" />
+
     <!-- Race-weekend panel (a theme's race_calendar, see RaceWeekend): in the free space under the clock,
          shown only from shortly before a weekend's first session until the race is over. Updated once a
          minute with the clock, never animated. -->

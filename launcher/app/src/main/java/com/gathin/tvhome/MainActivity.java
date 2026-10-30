@@ -29,6 +29,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.media.session.MediaController;
 import android.media.tv.TvContract;
 import android.media.tv.TvInputInfo;
 import android.media.tv.TvInputManager;
@@ -142,6 +143,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private RecyclerView grid;
     private FrameLayout root;
     private WallpaperPlayer wallpaperPlayer;
+    /** What is playing, as the artwork behind the tiles while Home is in front. */
+    private MediaWatch music;
+    private ArtBackdrop musicBackdrop;
     private GlassView glass;
     private View ambient;
     private TextView heroName;
@@ -482,6 +486,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // the theme's background, so launch looks the same.
         getWindow().setBackgroundDrawable(null);
         wallpaperPlayer = new WallpaperPlayer(this, root, cfg);
+        musicBackdrop = new ArtBackdrop(findViewById(R.id.musicBackdrop), 0.65f);
+        music = new MediaWatch(this, handler, this::showMusicBackdrop);
         sky = findViewById(R.id.sky);
         sky.setIntensity(cfg.skyIntensity);
         glass = findViewById(R.id.glass);
@@ -793,6 +799,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnSettings.setOnClickListener(v -> {
             if (launcherSettingsButton) startActivityForResult(
                     new Intent(this, LauncherSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST);
+            // settings_key_panel: the same quick panel as the remote's Settings button.
+            else if (settingsKeyPanel) open(new Intent(this, QuickSettingsActivity.class));
             else open(systemIntent(Settings.ACTION_SETTINGS));
         });
         btnReorder = findViewById(R.id.btnReorder);
@@ -945,7 +953,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private boolean openInputsIfAsked(Intent intent) {
         if (intent == null || !ACTION_VIEW_INPUTS.equals(intent.getAction())) return false;
         setIntent(new Intent(Intent.ACTION_MAIN));
-        View anchor = topMenu ? findViewById(R.id.btnSettings) : btnInputs;
+        // show_inputs_pill=false hides the pill too: the gear stands in for it, as in showInputs().
+        View anchor = topMenu || !showInputsMenuRow ? findViewById(R.id.btnSettings) : btnInputs;
         if (anchor.getVisibility() != View.VISIBLE) return true;
         if (anchor.isLaidOut()) {
             // Android 9 delivers a new intent to a paused activity with a brief resume and pause around it, and
@@ -1067,6 +1076,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (gameDay != null) gameDay.start();
         sky.update();
         wallpaperPlayer.start();
+        music.start();
         handler.postDelayed(minuteTick, MINUTE_MS);
         if (festive && lamp != null) {
             lamp.start();
@@ -1241,6 +1251,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         root.removeCallbacks(showIdleClock);
         endReorder();   // Home or another app while reordering keeps the order so far
         wallpaperPlayer.stop();
+        music.stop();   // the artwork stays as it is under the quick panel, and is checked again on return
         stopAmbientAnimation();
         hero.animate().cancel();
         ambient.animate().cancel();
@@ -2732,6 +2743,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         racePager.setVisibility(View.VISIBLE);
     }
 
+    /** The playing track's artwork behind the tiles; paused, stopped or without artwork, the wallpaper again. */
+    private void showMusicBackdrop() {
+        MediaController c = music.controller();
+        boolean playing = c != null && MediaWatch.playing(c.getPlaybackState()) && MediaWatch.hasContent(c);
+        musicBackdrop.show(playing ? MediaWatch.art(c.getMetadata()) : null);
+    }
+
     private void updateRace() {        // an empty calendar (a theme without race_calendar, or a reset) hides a panel the last theme showed
         RaceWeekend.State s = raceCalendar.isEmpty() ? null : RaceWeekend.at(raceCalendar, java.time.Instant.now());
         if (s == null) {
@@ -3260,10 +3278,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             openSourcePanel();
             return;
         }
-        // top_menu: the pill is gone, so the list hangs under the gear, growing inward from the right.
-        // Read the switch, not the pill: show_inputs_pill=false hides the pill too, and there the list
-        // keeps its usual place.
-        boolean underGear = topMenu;
+        // top_menu, or show_inputs_pill=false: the pill is gone, so the list hangs under the gear, growing
+        // inward from the right (the remote's Web button opens it on this TV).
+        boolean underGear = topMenu || !showInputsMenuRow;
         View anchor = findViewById(underGear ? R.id.btnSettings : R.id.btnInputs);
         View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
         LinearLayout rows = panel.findViewById(R.id.rows);

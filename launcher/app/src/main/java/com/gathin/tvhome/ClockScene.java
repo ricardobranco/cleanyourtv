@@ -5,16 +5,21 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
+import android.media.MediaMetadata;
+import android.media.session.MediaController;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.util.DisplayMetrics;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import java.io.File;
 import java.time.LocalDateTime;
@@ -27,7 +32,9 @@ import java.util.Set;
 
 /**
  * The clock screensaver's scene (layout dream_clock): the thin clock and date on black over a slow ambient
- * glow. Every minute the clock drifts to a new spot and the glow shifts colour, so nothing burns in.
+ * glow. Every minute the clock drifts to a new spot and the glow shifts colour, so nothing burns in. While an app
+ * plays something (MediaWatch, with notification access), its artwork fills the screen behind the clock, darkened,
+ * and its title and artist drift with the clock; without artwork the glow takes over again.
  * Shared by ClockDream (the system screensaver) and ClockActivity (Home left idle).
  */
 final class ClockScene {
@@ -40,6 +47,8 @@ final class ClockScene {
     private static final int[] PALETTE = {0xFF2B5CFF, 0xFF00A39A, 0xFF8A3FFC, 0xFFE0661B, 0xFFD6336C};
 
     private final Handler handler = new Handler(Looper.getMainLooper());
+    /** The token of the glow's queued fade steps. */
+    private static final Object GLOW = new Object();
     private final Random random = new Random();
     private final View content;
     private final ImageView ambient;
@@ -61,6 +70,14 @@ final class ClockScene {
     private String order;
     private Map<String, Set<String>> moods;
     private String latitude, longitude;
+    /** What is playing, under the date; the track shown ("" for none) and the glow colour from its art (0: none). */
+    private final MediaWatch media;
+    private final View music;
+    private final ArtBackdrop backdrop;
+    private final TextView musicTitle, musicArtist;
+    private String track = "";
+    private int musicColor;
+    private boolean started;
 
     private final Runnable tick = new Runnable() {
         @Override
@@ -83,6 +100,15 @@ final class ClockScene {
                 glow.setGradientRadius((r - l) * 0.55f));
         colorIndex = random.nextInt(PALETTE.length);
         setGlow(PALETTE[colorIndex]);
+        music = root.findViewById(R.id.dreamMusic);
+        backdrop = new ArtBackdrop(root.findViewById(R.id.dreamBackdrop), 0.55f);
+        musicTitle = root.findViewById(R.id.dreamTitle);
+        musicArtist = root.findViewById(R.id.dreamArtist);
+        media = new MediaWatch(root.getContext(), handler, this::showMusic);
+        // A longer title, or the track block appearing, must not push the clock past the screen's edge.
+        content.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
+            if (r - l != or - ol || b - t != ob - ot) keepOnScreen();
+        });
     }
 
     void start() {
@@ -94,11 +120,17 @@ final class ClockScene {
         handler.removeCallbacks(tick);
         handler.postDelayed(tick, MOVE_MS);
         if (wallpaperFile != null && !wallpaperShown) loadWallpaper();
+        started = true;
+        media.start();   // before the first layout, so the clock is placed with the track already under it
     }
 
     void stop() {
+        started = false;
+        media.stop();
+        track = "";
         handler.removeCallbacksAndMessages(null);   // the tick and any glow steps still queued
         content.animate().cancel();
+        backdrop.cancel();
         wallpaperGeneration++;   // a decode still running must not attach its picture to a stopped scene
     }
 
@@ -222,8 +254,86 @@ final class ClockScene {
                 WallpaperMood.timeOfDay(now.getHour() * 60 + now.getMinute(), sun[0], sun[1]));
     }
 
+    /**
+     * The track under the clock while something plays, else none. A new track, or music starting or stopping,
+     * moves the clock as the minute tick does, so the bigger or smaller block never runs off the screen.
+     */
+    private void showMusic() {
+        if (!started) return;
+        MediaController c = media.controller();
+        boolean playing = c != null && MediaWatch.playing(c.getPlaybackState()) && MediaWatch.hasContent(c);
+        MediaMetadata m = playing ? c.getMetadata() : null;
+        CharSequence title = playing ? MediaWatch.title(m) : null;
+        CharSequence artist = playing ? MediaWatch.subtitle(m) : null;
+        Bitmap art = playing ? MediaWatch.art(m) : null;
+        String now = playing ? title + "\n" + artist + "\n" + (art != null) : "";   // art often comes a moment after the title
+        if (now.equals(track)) return;
+        boolean placed = !track.isEmpty() || content.getAlpha() > 0f;
+        boolean artOnly = playing && track.startsWith(title + "\n" + artist + "\n");
+        track = now;
+        Runnable apply = () -> {
+            if (!playing) {
+                music.setVisibility(View.GONE);
+            } else {
+                musicTitle.setText(title);
+                musicArtist.setText(artist);
+                musicArtist.setVisibility(artist != null ? View.VISIBLE : View.GONE);
+                music.setVisibility(View.VISIBLE);
+            }
+        };
+        backdrop.show(art);
+        if (placed && !artOnly) moveClock(apply);
+        else apply.run();
+        int color = art != null ? vivid(art) : 0;
+        if (color != musicColor) {
+            musicColor = color;
+            fadeGlow(color != 0 ? color : PALETTE[colorIndex]);
+        }
+    }
+
+    /**
+     * The artwork's strongest colour, brightened for the glow: the hue that carries the most saturated, bright
+     * pixels of a 16x16 copy. 0 for grey or black-and-white art, which leaves the glow's own colours.
+     */
+    static int vivid(Bitmap art) {
+        Bitmap small = ArtBackdrop.smallCopy(art, 16);
+        if (small == null) return 0;
+        float[] hsv = new float[3];
+        float[] weight = new float[12];
+        float[][] rgb = new float[12][3];
+        for (int y = 0; y < small.getHeight(); y++) {
+            for (int x = 0; x < small.getWidth(); x++) {
+                int p = small.getPixel(x, y);
+                Color.colorToHSV(p, hsv);
+                float w = hsv[1] * hsv[2];
+                if (hsv[1] < 0.2f || hsv[2] < 0.2f) continue;
+                int bin = (int) (hsv[0] / 30f) % 12;
+                weight[bin] += w;
+                rgb[bin][0] += Color.red(p) * w;
+                rgb[bin][1] += Color.green(p) * w;
+                rgb[bin][2] += Color.blue(p) * w;
+            }
+        }
+        if (small != art) small.recycle();
+        int best = 0;
+        for (int i = 1; i < 12; i++) if (weight[i] > weight[best]) best = i;
+        if (weight[best] < 4f) return 0;   // a few faint pixels out of 256
+        float w = weight[best];
+        Color.RGBToHSV(Math.round(rgb[best][0] / w), Math.round(rgb[best][1] / w), Math.round(rgb[best][2] / w), hsv);
+        hsv[1] = Math.max(hsv[1], 0.55f);
+        hsv[2] = 1f;
+        return Color.HSVToColor(hsv);
+    }
+
     private void moveClock() {
+        moveClock(null);
+    }
+
+    /** Fades the clock out, runs whileHidden, and fades it back in at a new spot. */
+    private void moveClock(Runnable whileHidden) {
+        content.animate().cancel();
         content.animate().alpha(0f).setDuration(900).withLayer().withEndAction(() -> {
+            if (whileHidden != null) whileHidden.run();
             placeClock();
             content.animate().alpha(1f).setDuration(1200).withLayer().start();
         }).start();
@@ -244,15 +354,29 @@ final class ClockScene {
         }
     }
 
+    private void keepOnScreen() {
+        View parent = (View) content.getParent();
+        float maxX = Math.max(0, parent.getWidth() - content.getWidth());
+        float maxY = Math.max(0, parent.getHeight() - content.getHeight());
+        if (content.getX() > maxX) content.setX(maxX);
+        if (content.getY() > maxY) content.setY(maxY);
+    }
+
     private void shiftGlow() {
-        if (wallpaperShown) return;
-        int from = glowColor;
+        if (wallpaperShown || musicColor != 0) return;   // the artwork's colour holds while it plays
         colorIndex = (colorIndex + 1) % PALETTE.length;
-        int to = PALETTE[colorIndex];
+        fadeGlow(PALETTE[colorIndex]);
+    }
+
+    private void fadeGlow(int to) {
+        if (wallpaperShown) return;
+        handler.removeCallbacksAndMessages(GLOW);   // a fade still running would fight this one
+        int from = glowColor;
         ArgbEvaluator mix = new ArgbEvaluator();
         for (int i = 1; i <= GLOW_STEPS; i++) {
             float f = (float) i / GLOW_STEPS;
-            handler.postDelayed(() -> setGlow((int) mix.evaluate(f, from, to)), i * GLOW_STEP_MS);
+            handler.postAtTime(() -> setGlow((int) mix.evaluate(f, from, to)), GLOW,
+                    SystemClock.uptimeMillis() + i * GLOW_STEP_MS);
         }
     }
 

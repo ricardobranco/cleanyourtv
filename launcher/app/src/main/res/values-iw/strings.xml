@@ -86,6 +86,20 @@
     <string name="card_state_new_label">שם חדש</string>
     <string name="quick_picture">תצוגה</string>
     <string name="quick_network">רשת</string>
+    <string name="quick_screensaver">שומר מסך</string>
+    <string name="quick_bluetooth">Bluetooth</string>
+    <string name="quick_audio_output">פלט שמע</string>
+    <string name="quick_tv_speakers">רמקולי הטלוויזיה</string>
+    <string name="quick_external_device">התקן חיצוני</string>
+    <string name="quick_accessibility">נגישות</string>
+    <string name="quick_notifications">התראות</string>
+    <string name="quick_no_notifications">אין התראות</string>
+    <string name="quick_notifications_off">הגישה להתראות כבויה</string>
+    <string name="quick_clear_all">ניקוי הכול</string>
+    <string name="media_previous">הקודם</string>
+    <string name="media_play">הפעלה</string>
+    <string name="media_pause">השהיה</string>
+    <string name="media_next">הבא</string>
     <string name="quick_apps">אפליקציות</string>
     <string name="quick_apps_hint">הפעלת אפליקציות שהושבתו</string>
     <string name="dock_edit">עריכת שורת המועדפים</string>
@@ -153,4 +167,7 @@
     <string name="clock_format_12">12 שעות</string>
     <string name="clock_format_24">24 שעות</string>
     <string name="remote_buttons_label">לחצני השלט</string>
+    <string name="remote_button_mute">השתקה</string>
+    <string name="remote_button_sleep">שינה</string>
+    <string name="remote_button_screensaver">שומר מסך</string>
 </resources>
