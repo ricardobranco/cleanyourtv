@@ -18,9 +18,9 @@
     <!-- Apps pinned to the dock row at the bottom, in this order. Missing apps are skipped. -->
     <string-array name="dock_apps">
         <item>com.netflix.ninja</item>
-        <item>com.amazon.amazonvideo.livingroom</item>
         <item>com.google.android.youtube.tv</item>
-        <item>in.startv.hotstar</item>
+        <item>com.amazon.amazonvideo.livingroom</item>
+        <item>com.disney.disneyplus</item>
     </string-array>
     <!-- With fewer dock_apps than columns (or a dock app that is not installed), the free dock slots take
          the first grid apps, so the dock never shows a gap. false leaves them empty (#162); a theme can
@@ -29,12 +29,12 @@
 
     <!-- Apps never shown as tiles (e.g. the Live TV app, which the Inputs menu already covers). -->
     <string-array name="hidden_apps">
-        <item>com.mediatek.wwtv.tvcenter</item>
-        <item>com.mitv.gallery</item>
+        <item>com.tcl.tv</item>
+        <item>com.tcl.suspension</item>
     </string-array>
 
     <!-- The TV's Live TV / tuner app, offered at the end of the Inputs menu. Leave empty to omit. -->
-    <string name="live_tv_package" translatable="false">com.mediatek.wwtv.tvcenter</string>
+    <string name="live_tv_package" translatable="false">com.tcl.tv</string>
 
     <!-- Open the Live TV app above the first time Home comes up after the TV is switched on, for sets that are
          mostly used for broadcast TV. Once per boot: Home after that stays Home. Can also be set with
@@ -162,11 +162,12 @@
          a temporary `Log.d` in the helper's `onKeyEvent`: `getKeyCode()`, `getScanCode()`, `getDeviceId()`, read
          after a HOME_KEY_SERVICE=1 rebuild. Leave empty to omit. -->
     <integer-array name="settings_key_keycodes">
+        <item>83</item>
     </integer-array>
     <!-- What those Settings buttons open: false, the TV's Settings; true, a small glass panel at the top right
          with TV settings, Display, Network, Apps (re-enable an app) and Launcher settings, over whatever is on screen.
          Both keys can also be set from a theme's config.json ("settings_key_keycodes": [83]). -->
-    <bool name="settings_key_panel">false</bool>
+    <bool name="settings_key_panel">true</bool>
 
     <!-- A force stop of the launcher (Settings, a cleaner app, am force-stop) takes HomeKeyService and InputKeyService
          off the enabled list. true: Home puts the helpers that were running back when it starts; one turned off in
@@ -214,6 +215,12 @@
          where the firmware hands KEYCODE_GUIDE (172) to the stock launcher and no app ever receives it. Leave empty
          to omit. -->
     <string-array name="app_keys" translatable="false">
+        <!-- TCL 55C845X2, BT_RC833 remote (keycodes read from InputReader on the TV) -->
+        <item>4062:com.netflix.ninja</item>
+        <item>4099:com.amazon.amazonvideo.livingroom</item>
+        <item>190:com.google.android.youtube.tv</item>
+        <!-- TCL Home button: swallowed, does nothing -->
+        <item>4137:ignore</item>
     </string-array>
 
     <!-- Remote buttons the owner can map to an app or an action on the TV, from Launcher settings > Remote buttons,
@@ -226,6 +233,13 @@
          "190=YouTube", "4137=TCL Home", "4020=TCL Channel", "4159=Web". A theme's config.json can set it too.
          Leave empty to hide the row (the default). -->
     <string-array name="remap_buttons" translatable="false">
+        <!-- TCL 55C845X2, BT_RC833 remote -->
+        <item>4062=Netflix</item>
+        <item>4099=Prime Video</item>
+        <item>190=YouTube</item>
+        <item>4137=TCL Home</item>
+        <item>4020=TCL Channel</item>
+        <item>4159=Web</item>
     </string-array>
 
     <!-- Package of the stock launcher, for TVs whose firmware turns it back on after it was disabled. XGIMI's
@@ -272,7 +286,7 @@
     <!-- A name after the greeting: "Mr. Trịnh" shows GOOD MORNING, MR. TRỊNH. Empty: the greeting alone. -->
     <string name="greeting_name" translatable="false"></string>
     <!-- The greeting above the clock ("Good evening"). false hides it. Can also be set with "show_greeting" in a theme. -->
-    <bool name="show_greeting">true</bool>
+    <bool name="show_greeting">false</bool>
     <!-- The date and the line between the clock and the date in the clock's full white instead of dimmed. Can also be
          set with "header_white" in a theme. -->
     <bool name="header_white">false</bool>
@@ -320,7 +334,7 @@
     <bool name="reorder_button">false</bool>
     <!-- Wi-Fi and Settings as round icon-only buttons (the network name moves to the talkback description);
          Inputs keeps its label. -->
-    <bool name="icon_only_buttons">false</bool>
+    <bool name="icon_only_buttons">true</bool>
     <!-- The Inputs pill as a round icon button too (the label moves to the talkback description). -->
     <bool name="icon_only_inputs">false</bool>
     <!-- With vpn_pill, the VPN pill as a round icon button too: an open lock on the plain glass button while no VPN is
@@ -351,14 +365,14 @@
 
     <!-- The Wi-Fi/Ethernet pill in the top bar. false hides it (on Android 14 with Location off it can
          only say "Wi-Fi", not the network name). Can also be set with "show_network_pill" in a theme. -->
-    <bool name="show_network_pill">true</bool>
+    <bool name="show_network_pill">false</bool>
     <!-- Apps shown as round buttons with their own logo in the top bar, left of the network pill, in this order.
          They leave the grid. Missing apps are skipped. Can also be set with "top_bar_apps" in a theme. -->
     <string-array name="top_bar_apps" translatable="false">
     </string-array>
     <!-- The Inputs pill in the top bar, shown when the TV has inputs to list. false hides it for good; what the
          remote's Input button does is unchanged. Can also be set with "show_inputs_pill" in a theme. -->
-    <bool name="show_inputs_pill">true</bool>
+    <bool name="show_inputs_pill">false</bool>
     <!-- The Inputs list shows only HDMI ports and CEC devices that report connected. Empty ports, devices asleep in
          standby (some TVs, TCL among them, report an empty HDMI port as connected-standby, the same state a
          sleeping device has) and the AV jacks fold behind a "More inputs" row that expands the rest. An HDMI row

@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- MissingLeanbackLauncher: no app-list entry on purpose (see MainActivity), so TCL's Quick Panel leaves it out. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="MissingLeanbackLauncher">
 
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
@@ -96,11 +98,8 @@
                 <category android:name="android.intent.category.COMMON_HOME" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
-            <!-- Listed in the TV's own app list, so it can be opened from the stock home screen too. -->
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
-            </intent-filter>
+            <!-- No LEANBACK_LAUNCHER entry on this TV: TCL's Quick Panel lists every recently used app that has one,
+                 and the stock home screen it was for is disabled. Home is reached through the filter above. -->
         </activity>
 
         <activity
