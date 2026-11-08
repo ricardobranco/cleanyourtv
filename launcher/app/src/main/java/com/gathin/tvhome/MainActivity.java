@@ -338,6 +338,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private boolean reordering;
     /** Key of the tile being carried in reorder mode, or null. */
     private String movingKey;
+    /** The carried tile came from the tile menu's Move: putting it down also ends reorder mode. */
+    private boolean moveOnce;
     /** Tile order when reorder mode started, to save only when something moved. */
     private List<String> orderAtStart;
     /**
@@ -1473,7 +1475,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     return true;
                 default:
                     if (ok || back) {
-                        if (!down) drop();
+                        if (!down) {
+                            if (moveOnce) placeAndFinish();
+                            else drop();
+                        }
                         return true;
                     }
                     return super.dispatchKeyEvent(event);
@@ -1644,6 +1649,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         dimOthers();
     }
 
+    /** Puts the tile carried from the tile menu down, saves the order and leaves reorder mode with focus on it. */
+    private void placeAndFinish() {
+        String key = movingKey;
+        endReorder();
+        int at = adapter.positionOf(key);
+        if (at >= 0) refocusAfterLayout(at);
+    }
+
     /** Puts the carried tile down where it is; the mode stays on. */
     private void drop() {
         movingKey = null;
@@ -1670,6 +1683,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** Ends the mode and saves the order if it changed since the mode started. */
     private void endReorder() {
         if (!reordering) return;
+        moveOnce = false;
         dockEditing = false;
         dockEditSlot = -1;
         dockEditAppKey = null;
@@ -3844,31 +3858,34 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         String pkg = adapter.packageAt(position);
         // Empty dock slots and the Default-home tile carry the launcher's own package: no menu for them.
         if (key == null || pkg == null || pkg.equals(getPackageName())) return;
-        View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
+        View panel = getLayoutInflater().inflate(R.layout.popup_tile_menu, root, false);
+        ((ImageView) panel.findViewById(R.id.appIcon)).setImageDrawable(adapter.iconAt(position));
+        ((TextView) panel.findViewById(R.id.appName)).setText(adapter.labelAt(position));
         LinearLayout rows = panel.findViewById(R.id.rows);
-        PopupWindow popup = glassPopup(panel, (int) (200 * density));
-        if (dockRow && position < adapter.movableCount()) {
-            boolean inDock = position < COLUMNS;
-            addSettingsMenuRow(rows, popup, inDock ? R.string.tile_replace_in_dock : R.string.tile_add_to_dock,
-                    () -> startDockEditFor(key, inDock));
-        }
-        if (position < adapter.movableCount()) addSettingsMenuRow(rows, popup, R.string.tile_move, () -> {
+        PopupWindow popup = glassPopup(panel, (int) (220 * density));
+        if (position < adapter.movableCount()) addSettingsMenuRow(rows, popup, R.drawable.ic_move, R.string.tile_move, () -> {
             if (!beginReorder()) return;
             int at = adapter.positionOf(key);   // beginReorder can rebuild the tiles
             if (at < 0) return;
             focusTile(at);
             pickUp(at);
-            Toast.makeText(this, R.string.reorder_hint, Toast.LENGTH_LONG).show();
+            moveOnce = true;
+            Toast.makeText(this, R.string.tile_move_hint, Toast.LENGTH_SHORT).show();
         });
-        if (appLibraryEnabled) addSettingsMenuRow(rows, popup, R.string.library_remove_shortcut, () -> {
+        if (dockRow && position < adapter.movableCount()) {
+            boolean inDock = position < COLUMNS;
+            addSettingsMenuRow(rows, popup, R.drawable.ic_dock,
+                    inDock ? R.string.tile_replace_in_dock : R.string.tile_add_to_dock, () -> startDockEditFor(key, inDock));
+        }
+        // Some firmware has no App info page at all; a row that only toasts "can't open" helps nobody.
+        Intent info = SystemSettings.appInfo(this, pkg);
+        if (info != null) addSettingsMenuRow(rows, popup, R.drawable.ic_info, R.string.library_app_info, () -> open(info));
+        if (appLibraryEnabled) addSettingsMenuRow(rows, popup, R.drawable.ic_remove, R.string.library_remove_shortcut, () -> {
             if (LibraryApps.save(this, pkg, false)) reloadApps(false);
             else Toast.makeText(this, R.string.library_save_failed, Toast.LENGTH_LONG).show();
         });
-        // Some firmware has no App info page at all; a row that only toasts "can't open" helps nobody.
-        Intent info = SystemSettings.appInfo(this, pkg);
-        if (info != null) addSettingsMenuRow(rows, popup, R.string.library_app_info, () -> open(info));
         panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
-        popup.setWidth(Math.max((int) (200 * density), panel.getMeasuredWidth()));
+        popup.setWidth(Math.max((int) (220 * density), panel.getMeasuredWidth()));
         // Dock tiles sit near the bottom of the screen: open the menu above the tile when it would not fit below.
         int[] at = new int[2];
         card.getLocationInWindow(at);
@@ -3888,8 +3905,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     private void addSettingsMenuRow(LinearLayout rows, PopupWindow popup, int title, Runnable action) {
+        addSettingsMenuRow(rows, popup, 0, title, action);
+    }
+
+    private void addSettingsMenuRow(LinearLayout rows, PopupWindow popup, int iconRes, int title, Runnable action) {
         View row = getLayoutInflater().inflate(R.layout.item_input, rows, false);
-        row.findViewById(R.id.icon).setVisibility(View.GONE);
+        ImageView icon = row.findViewById(R.id.icon);
+        if (iconRes != 0) icon.setImageResource(iconRes);
+        else icon.setVisibility(View.GONE);
         row.findViewById(R.id.dot).setVisibility(View.GONE);
         row.findViewById(R.id.status).setVisibility(View.GONE);
         ((TextView) row.findViewById(R.id.title)).setText(title);

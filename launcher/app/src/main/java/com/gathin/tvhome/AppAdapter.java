@@ -669,6 +669,10 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     /** The tile's artwork, its banner or else its icon, for the cinematic shelf's backdrop (HeroArt). */
+    Drawable iconAt(int position) {
+        return position >= 0 && position < items.size() ? items.get(position).icon : null;
+    }
+
     Drawable artworkAt(int position) {
         if (position < 0 || position >= items.size()) return null;
         Entry e = items.get(position);

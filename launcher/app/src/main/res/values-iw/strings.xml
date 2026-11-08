@@ -112,6 +112,7 @@
     <string name="reorder">סידור אפליקציות</string>
     <string name="tile_move">העברה</string>
     <string name="reorder_hint">אישור מרים אפליקציה, החצים מזיזים אותה, חזרה מניחה אותה. חזרה שוב לסיום.</string>
+    <string name="tile_move_hint">החצים מזיזים, OK ממקם</string>
     <string name="reorder_not_saved">לא ניתן לשמור את הסדר החדש</string>
     <string name="app_library">ספריית אפליקציות</string>
     <string name="library_empty">לא נמצאו אפליקציות שניתן לפתוח</string>
